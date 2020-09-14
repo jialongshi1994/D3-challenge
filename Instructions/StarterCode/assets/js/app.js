@@ -201,5 +201,5 @@ function visualize(theData) {
     .scaleLinear()
     .domain([yMin, yMax])    
     .range([height - margin - labelWidth, margin])
-
+// create the axes
  
