@@ -202,4 +202,195 @@ function visualize(theData) {
     .domain([yMin, yMax])    
     .range([height - margin - labelWidth, margin])
 // create the axes
- 
+   const xAxis = d3.axisBottom(xScale)
+   const yAxis = d3.axisLeft(yScale)
+
+  // determine x and y tick counts
+  function tickCount() {
+    if (width <= 500) {
+      xAxis.ticks(5)
+      yAxis.ticks(5)
+    } else {
+      xAxis.ticks(10)
+      yAxis.ticks(10)
+    }
+  }
+  tickCount()
+
+  // append the axes
+  svg
+    .append("g")
+    .call(xAxis)
+    .attr("class", "xAxis")
+    .attr("transform", "translate(0," + (height - margin - labelWidth) + ")")
+  svg
+    .append("g")
+    .call(yAxis)
+    .attr("class", "yAxis")
+    .attr("transform", "translate(" + (margin + labelWidth) + ", 0)")
+
+  // creat dots
+  const theCircles = svg.selectAll("g theCircles").data(theData).enter()
+
+  // append circle and add hover rules
+  theCircles
+    .append("circle")    
+    .attr("cx", function(d) {
+      return xScale(d[curX])
+    })
+    .attr("cy", function(d) {
+      return yScale(d[curY])
+    })
+    .attr("r", circRadius)
+    .attr("class", function(d) {
+      return "stateCircle " + d.abbr
+    })    
+    .on("mouseover", function(d) {        
+      toolTip.show(d, this)      
+      d3.select(this).style("stroke", "#323232")
+    })
+    .on("mouseout", function(d) {
+      toolTip.hide(d)
+      d3.select(this).style("stroke", "#e3e3e3")
+    })
+
+  // append text and add hover rules
+  theCircles
+    .append("text")    
+    .text(function(d) {
+      return d.abbr
+    })    
+    .attr("dx", function(d) {
+      return xScale(d[curX])
+    })
+    .attr("dy", function(d) {        
+      return yScale(d[curY]) + circRadius / 2.5
+    })
+    .attr("font-size", circRadius)
+    .attr("class", "stateText")    
+    .on("mouseover", function(d) {        
+      toolTip.show(d)      
+      d3.select("." + d.abbr).style("stroke", "#323232")
+    })
+    .on("mouseout", function(d) {        
+      toolTip.hide(d)      
+      d3.select("." + d.abbr).style("stroke", "#e3e3e3")
+    })
+
+  // select all axis text and add click event.
+  d3.selectAll(".aText").on("click", function() {      
+    const self = d3.select(this)    
+    if (self.classed("inactive")) {        
+      const axis = self.attr("data-axis")
+      const name = self.attr("data-name")
+      if (axis === "x") {
+        curX = name
+        xMinMax()
+        xScale.domain([xMin, xMax])
+        svg.select(".xAxis").transition().duration(300).call(xAxis)
+        d3.selectAll("circle").each(function() {
+          d3
+            .select(this)
+            .transition()
+            .attr("cx", function(d) {
+              return xScale(d[curX])
+            })
+            .duration(300)
+        })
+
+        d3.selectAll(".stateText").each(function() {
+          d3
+            .select(this)
+            .transition()
+            .attr("dx", function(d) {
+              return xScale(d[curX])
+            })
+            .duration(300)
+        })
+
+        labelChange(axis, self)
+      }
+      else {
+        curY = name
+
+        yMinMax()
+
+        yScale.domain([yMin, yMax])
+
+        svg.select(".yAxis").transition().duration(300).call(yAxis)
+
+        d3.selectAll("circle").each(function() {
+          d3
+            .select(this)
+            .transition()
+            .attr("cy", function(d) {
+              return yScale(d[curY])
+            })
+            .duration(300)
+        })
+
+        d3.selectAll(".stateText").each(function() {
+          d3
+            .select(this)
+            .transition()
+            .attr("dy", function(d) {
+              return yScale(d[curY]) + circRadius / 3
+            })
+            .duration(300)
+        })
+
+        labelChange(axis, self)
+      }
+    }
+  })
+
+  // add true mobile-responsiveness
+  d3.select(window).on("resize", resize)
+
+  // hand size and position changes
+  function resize() {
+    width = parseInt(d3.select("#scatter").style("width"))
+    height = width - width / 3.9
+    leftTextY = (height + labelWidth) / 2 - labelWidth
+
+    svg.attr("width", width).attr("height", height)
+
+    xScale.range([margin + labelWidth, width - margin])
+    yScale.range([height - margin - labelWidth, margin])
+
+    svg
+      .select(".xAxis")
+      .call(xAxis)
+      .attr("transform", "translate(0," + (height - margin - labelWidth) + ")")
+
+    svg.select(".yAxis").call(yAxis)
+
+    tickCount()
+    xTextRefresh()
+    yTextRefresh()
+
+    getCircRadius()
+
+    d3
+      .selectAll("circle")
+      .attr("cy", function(d) {
+        return yScale(d[curY])
+      })
+      .attr("cx", function(d) {
+        return xScale(d[curX])
+      })
+      .attr("r", function() {
+        return circRadius
+      })
+
+    d3
+      .selectAll(".stateText")
+      .attr("dy", function(d) {
+        return yScale(d[curY]) + circRadius / 3
+      })
+      .attr("dx", function(d) {
+        return xScale(d[curX])
+      })
+      .attr("r", circRadius / 3)
+  }
+}
